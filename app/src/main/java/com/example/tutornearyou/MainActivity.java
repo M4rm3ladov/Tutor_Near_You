@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        startService(new Intent(getBaseContext(), MyService.class));
         
         firebaseDatabase = FirebaseDatabase.getInstance();
         tutorInfoRef = firebaseDatabase.getReference(CommonClass.TUTOR_INFO_REFERENCE);
@@ -118,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 .setTheme(R.style.AppTheme)
                 .build(), LOGIN_REQUEST_CODE);
     }
+
 
 /*    @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
