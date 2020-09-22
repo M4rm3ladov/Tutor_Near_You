@@ -7,9 +7,9 @@
         <layer-list>
             <item android:right="2dp" android:top="2dp" android:left="2dp" android:bottom="2dp">
                 <shape>
-                    <solid android:color="@color/colorPrimary"/>
+                    <solid android:color="@color/colorPhone"/>
                     <corners android:radius="2dp"/>
-                    <stroke android:color="@color/colorPrimary"/>
+                    <stroke android:color="@color/colorPhone"/>
                 </shape>
             </item>
         </layer-list>

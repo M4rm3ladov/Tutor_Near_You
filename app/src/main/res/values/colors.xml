@@ -9,4 +9,5 @@
     <color name="colorIcons">#FFFFFF</color>
     <color name="colorDivider">#BDBDBD</color>
     <color name="colorRipple">#F816A463</color>
+    <color name="colorPhone">#2ECC71</color>
 </resources>

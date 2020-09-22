@@ -38,31 +38,33 @@
         android:orientation="vertical">
 
         <Button
-            android:id="@+id/btn_sign_in"
+            android:id="@+id/btn_phone_sign_in"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginRight="16dp"
             android:layout_marginBottom="8dp"
-            android:background="@drawable/button_sign_in"
+            android:background="@drawable/button_phone_sign_in"
             android:padding="16dp"
-            android:text="Sign In"
+            android:text="Sign in with Phone"
+            android:drawableStart="@drawable/fui_ic_phone_white_24dp"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="18sp" />
 
         <Button
-            android:id="@+id/btn_register"
+            android:id="@+id/btn_google_sign_in"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginTop="8dp"
             android:layout_marginRight="16dp"
             android:layout_marginBottom="16dp"
-            android:background="@drawable/button_register"
+            android:background="@drawable/button_google_sign_in"
+            android:drawableStart="@drawable/googleg_standard_color_18"
             android:padding="16dp"
-            android:text="Register"
+            android:text="Sign in with Google"
             android:textAllCaps="false"
             android:textColor="@color/colorTextPrimary"
             android:textSize="18sp" />

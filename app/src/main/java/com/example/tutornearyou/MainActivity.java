@@ -1,205 +1,135 @@
 package com.example.tutornearyou;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.example.tutornearyou.Model.User;
+import com.example.tutornearyou.Model.TutorInfoModel;
+import com.firebase.ui.auth.AuthMethodPickerLayout;
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.IdpResponse;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.auth.AuthResult;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.rengwuxian.materialedittext.MaterialEditText;
+import com.google.firebase.database.ValueEventListener;
 
-import uk.co.chrisjenx.calligraphy.CalligraphyConfig;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button mbtnSignIn, mbtnRegister;
-    RelativeLayout rootLayout;
+    private static final int LOGIN_REQUEST_CODE = 7171 ;
 
     FirebaseAuth firebaseAuth;
     FirebaseDatabase firebaseDatabase;
-    DatabaseReference users;
+    FirebaseAuth.AuthStateListener authStateListener;
+    DatabaseReference tutorInfoRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // firebase instantiate
-        firebaseAuth = FirebaseAuth.getInstance();
+        
         firebaseDatabase = FirebaseDatabase.getInstance();
-        users = firebaseDatabase.getReference("Users");
+        tutorInfoRef = firebaseDatabase.getReference(CommonClass.TUTOR_INFO_REFERENCE);
 
-        // buttons instantiate
-        mbtnRegister = findViewById(R.id.btn_register);
-        mbtnSignIn = findViewById(R.id.btn_sign_in);
-        rootLayout = findViewById(R.id.rootLayout);
-
-        mbtnRegister.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showRegisterDialog();
-            }
-        });
-
-        mbtnSignIn.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                showLoginDialog();
-            }
-        });
+        firebaseAuth = FirebaseAuth.getInstance();
     }
 
-    private void showLoginDialog() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("SIGN IN");
-        dialog.setMessage("Please use email to sign in");
-
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View layout_login = inflater.inflate(R.layout.layout_login, null);
-
-        final MaterialEditText edtEmail = layout_login.findViewById(R.id.edtEmail);
-        final MaterialEditText edtPassword = layout_login.findViewById(R.id.edtPassword);
-
-        dialog.setView(layout_login);
-
-        dialog.setPositiveButton("SIGN IN", new DialogInterface.OnClickListener() {
+    @Override
+    protected void onStart() {
+        super.onStart();
+        authStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-                // check validation
-                if (TextUtils.isEmpty(edtEmail.getText().toString().trim())) {
-                    Snackbar.make(rootLayout, "Please fill in email address", Snackbar.LENGTH_SHORT).show();
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                if(firebaseUser != null){
+                    handleInfoRegister();
+                }else{
+                    handleLoginRegister();
                 }
-                if (TextUtils.isEmpty(edtPassword.getText().toString().trim())) {
-                    Snackbar.make(rootLayout, "Please fill in password", Snackbar.LENGTH_SHORT).show();
-                }
+            }
+        };
+        firebaseAuth.addAuthStateListener(authStateListener);
+    }
 
-                // login
-                firebaseAuth.signInWithEmailAndPassword(edtEmail.getText().toString(),edtPassword.getText().toString())
-                        .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
-                            @Override
-                            public void onSuccess(AuthResult authResult) {
-                                startActivity(new Intent(MainActivity.this, Welcome.class));
-                                finish();
-                            }
-                        }).addOnFailureListener(new OnFailureListener() {
+    @Override
+    protected void onStop() {
+        if(firebaseAuth != null && authStateListener != null){
+            firebaseAuth.removeAuthStateListener(authStateListener);
+        }
+        super.onStop();
+    }
+
+    private void handleInfoRegister() {
+        tutorInfoRef.child(firebaseAuth.getCurrentUser().getUid())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Snackbar.make(rootLayout, "Failed: "+e.getMessage(), Snackbar.LENGTH_SHORT).show();
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if(snapshot.exists()){
+
+                        }else{
+                            //showRegisterLayout();
+                            Intent registerIntent = new Intent(MainActivity.this, RegisterActivity.class);
+                            startActivity(registerIntent);
+                            finish();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
                     }
                 });
-            }
-        });
-        dialog.setNegativeButton("CANCEL",new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-
-        dialog.show();
     }
 
-    private void showRegisterDialog() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("REGISTER");
-        dialog.setMessage("Please use email to register");
+    private void handleLoginRegister(){
+        AuthMethodPickerLayout authMethodPickerLayout = new AuthMethodPickerLayout
+                .Builder(R.layout.activity_main)
+                .setPhoneButtonId(R.id.btn_phone_sign_in)
+                .setGoogleButtonId(R.id.btn_google_sign_in)
+                .build();
 
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View register_layout = inflater.inflate(R.layout.layout_register, null);
+        List<AuthUI.IdpConfig> providers = Arrays.asList(
+                new AuthUI.IdpConfig.PhoneBuilder().build(),
+                new AuthUI.IdpConfig.GoogleBuilder().build()
+        );
 
-        final MaterialEditText edtEmail = register_layout.findViewById(R.id.edtEmail);
-        final MaterialEditText edtPassword = register_layout.findViewById(R.id.edtPassword);
-        final MaterialEditText edtName = register_layout.findViewById(R.id.edtName);
-        final MaterialEditText edtPhone = register_layout.findViewById(R.id.edtPhone);
-
-        dialog.setView(register_layout);
-
-        dialog.setPositiveButton("REGISTER", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-                // check validation
-                if (TextUtils.isEmpty(edtEmail.getText().toString().trim())){
-                    Toast.makeText(rootLayout, "Please fill in email address", Toast.LENGTH_SHORT).show();
-                    return;
-                }else if (TextUtils.isEmpty(edtPassword.getText().toString().trim())){
-                    Snackbar.make(rootLayout, "Please fill in password", Snackbar.LENGTH_SHORT).show();
-                    return;
-                }else if (TextUtils.isEmpty(edtName.getText().toString().trim())){
-                    Snackbar.make(rootLayout, "Please fill in name", Snackbar.LENGTH_SHORT).show();
-                    return;
-                }else if (TextUtils.isEmpty(edtPhone.getText().toString().trim())){
-                    Snackbar.make(rootLayout, "Please fill in phone number", Snackbar.LENGTH_SHORT).show();
-                    return;
-                }else if (edtPassword.getText().toString().trim().length() < 6){
-                    Snackbar.make(rootLayout, "Password is too weak(A-Z, a-z, 1-9, must be at least 6 characters long)", Snackbar.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // register new user
-                firebaseAuth.createUserWithEmailAndPassword(edtEmail.getText().toString().trim(), edtPassword.getText().toString().trim())
-                        .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
-                            @Override
-                            public void onSuccess(AuthResult authResult) {
-                                // save user to firebase database
-                                User user = new User();
-                                user.setEmail(edtEmail.getText().toString());
-                                user.setPassword(edtPassword.getText().toString());
-                                user.setName(edtName.getText().toString());
-                                user.setPhone(edtPhone.getText().toString());
-
-                                // use email to key
-                                users.child(firebaseAuth.getCurrentUser().getUid())
-                                    .setValue(user)
-                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                        @Override
-                                        public void onSuccess(Void aVoid) {
-                                            showLoginDialog();
-                                        }
-                                    })
-                                    .addOnFailureListener(new OnFailureListener() {
-                                        @Override
-                                        public void onFailure(@NonNull Exception e) {
-                                            Snackbar.make(rootLayout, "Failed: " + e.getMessage(), Snackbar.LENGTH_SHORT).show();
-                                        }
-                                    });
-                            }
-                        })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Snackbar.make(rootLayout, "Failed: " + e.getMessage(), Snackbar.LENGTH_SHORT).show();
-                            }
-                });
-            }
-
-        });
-
-        dialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-
-        dialog.show();
+        startActivityForResult(AuthUI.getInstance()
+                .createSignInIntentBuilder()
+                .setAvailableProviders(providers)
+                .setIsSmartLockEnabled(false)
+                .setAuthMethodPickerLayout(authMethodPickerLayout)
+                .setAlwaysShowSignInMethodScreen(true)
+                .setTheme(R.style.AppTheme)
+                .build(), LOGIN_REQUEST_CODE);
     }
+
+/*    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == LOGIN_REQUEST_CODE){
+            IdpResponse idpResponse = IdpResponse.fromResultIntent(data);
+            if(resultCode == RESULT_OK){
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+            }else{
+                Toast.makeText(MainActivity.this,"[ERROR]: " + idpResponse.getError().getMessage(),Toast.LENGTH_SHORT).show();
+            }
+        }
+    }*/
+
 }
