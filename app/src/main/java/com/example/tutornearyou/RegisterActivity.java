@@ -22,15 +22,25 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 
 public class RegisterActivity extends AppCompatActivity {
 
     DatabaseReference tutorInfoRef;
+    FirebaseDatabase firebaseDatabase;
+    PhoneNumberUtil phoneNumberUtil;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+        phoneNumberUtil =  PhoneNumberUtil.getInstance();
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        tutorInfoRef = firebaseDatabase.getReference(CommonClass.TUTOR_INFO_REFERENCE);
+
         showRegisterLayout();
     }
 
@@ -71,6 +81,10 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Please fill in phone number field", Toast.LENGTH_SHORT).show();
                 return;
 
+            } else if (!isPhoneNumberValid(edt_phone_number.getText().toString(), "+63")) {
+                Toast.makeText(RegisterActivity.this, "Please enter a valid phone number", Toast.LENGTH_SHORT).show();
+                return;
+
             } else {
                 TutorInfoModel model = new TutorInfoModel();
                 model.setFirstName(edt_first_name.getText().toString());
@@ -95,9 +109,19 @@ public class RegisterActivity extends AppCompatActivity {
                                 //goToTutorHomeActivity(model);
                             }
                         });
-
             }
         });
+    }
+
+    private boolean isPhoneNumberValid(String phoneNumber, String countryCode) {
+        try{
+            Phonenumber.PhoneNumber numberProto = phoneNumberUtil.parse(phoneNumber, countryCode);
+            return phoneNumberUtil.isValidNumber(numberProto);
+
+        } catch (NumberParseException e){
+            System.err.println("NumberParseException was thrown: " + e.toString());
+        }
+        return false;
     }
 
     @Override

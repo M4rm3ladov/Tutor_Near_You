@@ -33,7 +33,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int LOGIN_REQUEST_CODE = 7171 ;
+    private static final int LOGIN_REQUEST_CODE = 7171;
 
     FirebaseAuth firebaseAuth;
     FirebaseDatabase firebaseDatabase;
@@ -43,34 +43,35 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        startService(new Intent(getBaseContext(), MyService.class));
-        
+        //startService(new Intent(getBaseContext(), MyService.class));
+
         firebaseDatabase = FirebaseDatabase.getInstance();
         tutorInfoRef = firebaseDatabase.getReference(CommonClass.TUTOR_INFO_REFERENCE);
 
         firebaseAuth = FirebaseAuth.getInstance();
+
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                if (firebaseUser != null) {
+                    handleInfoRegister();
+                } else {
+                    handleLoginRegister();
+                }
+            }
+        };
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        authStateListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
-                if(firebaseUser != null){
-                    handleInfoRegister();
-                }else{
-                    handleLoginRegister();
-                }
-            }
-        };
         firebaseAuth.addAuthStateListener(authStateListener);
     }
 
     @Override
     protected void onStop() {
-        if(firebaseAuth != null && authStateListener != null){
+        if (firebaseAuth != null && authStateListener != null) {
             firebaseAuth.removeAuthStateListener(authStateListener);
         }
         super.onStop();
@@ -81,9 +82,9 @@ public class MainActivity extends AppCompatActivity {
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if(snapshot.exists()){
+                        if (snapshot.exists()) {
 
-                        }else{
+                        } else {
                             //showRegisterLayout();
                             Intent registerIntent = new Intent(MainActivity.this, RegisterActivity.class);
                             startActivity(registerIntent);
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void handleLoginRegister(){
+    private void handleLoginRegister() {
         AuthMethodPickerLayout authMethodPickerLayout = new AuthMethodPickerLayout
                 .Builder(R.layout.activity_main)
                 .setPhoneButtonId(R.id.btn_phone_sign_in)
