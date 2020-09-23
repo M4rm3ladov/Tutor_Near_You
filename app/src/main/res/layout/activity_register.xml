@@ -66,7 +66,7 @@
                 android:id="@+id/edt_phone_number"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Phone Number"
+                android:hint="Phone Number (+639XXXXXXXXX)"
                 android:inputType="phone"/>
 
         </com.google.android.material.textfield.TextInputLayout>

@@ -83,13 +83,16 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (snapshot.exists()) {
+                            TutorInfoModel tutorInfoModel = snapshot.getValue(TutorInfoModel.class);
+                            CommonClass.currentUser = tutorInfoModel;
+                            startActivity(new Intent(MainActivity.this, TutorHomeActivity.class));
 
                         } else {
                             //showRegisterLayout();
                             Intent registerIntent = new Intent(MainActivity.this, RegisterActivity.class);
                             startActivity(registerIntent);
-                            finish();
                         }
+                        finish();
                     }
 
                     @Override
@@ -120,19 +123,5 @@ public class MainActivity extends AppCompatActivity {
                 .setTheme(R.style.AppTheme)
                 .build(), LOGIN_REQUEST_CODE);
     }
-
-
-/*    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == LOGIN_REQUEST_CODE){
-            IdpResponse idpResponse = IdpResponse.fromResultIntent(data);
-            if(resultCode == RESULT_OK){
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-            }else{
-                Toast.makeText(MainActivity.this,"[ERROR]: " + idpResponse.getError().getMessage(),Toast.LENGTH_SHORT).show();
-            }
-        }
-    }*/
 
 }

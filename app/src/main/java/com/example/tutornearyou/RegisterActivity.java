@@ -107,6 +107,8 @@ public class RegisterActivity extends AppCompatActivity {
                                 Toast.makeText(RegisterActivity.this, "Registered Successfully!", Toast.LENGTH_SHORT).show();
                                 //dialog.dismiss();
                                 //goToTutorHomeActivity(model);
+                                CommonClass.currentUser = model;
+                                startActivity(new Intent(RegisterActivity.this, TutorHomeActivity.class));
                             }
                         });
             }
