@@ -23,7 +23,10 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
+import com.example.tutornearyou.CommonClass;
 import com.example.tutornearyou.R;
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -39,6 +42,13 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
@@ -57,6 +67,22 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
 
     SupportMapFragment mapFragment;
 
+    // online system
+    DatabaseReference onlineRef, currentUserRef, tutorsLocationRef;
+    GeoFire geoFire;
+    ValueEventListener onlineValueEventListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(@NonNull DataSnapshot snapshot) {
+            if(snapshot.exists())
+                currentUserRef.onDisconnect().removeValue();
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError error) {
+            Snackbar.make(mapFragment.getView(), error.getMessage(),Snackbar.LENGTH_LONG).show();
+        }
+    };
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
@@ -72,6 +98,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void init() {
+        onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
+        tutorsLocationRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES);
+        currentUserRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES)
+                .child(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        geoFire = new GeoFire(tutorsLocationRef);
+
+        registerOnlineSystem();
+
         locationRequest = new LocationRequest();
         locationRequest.setSmallestDisplacement(10f);
         locationRequest.setInterval(5000);
@@ -85,6 +119,20 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                 LatLng newPosition = new LatLng(locationResult.getLastLocation().getLatitude(),
                         locationResult.getLastLocation().getLongitude());
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
+
+                // update location
+                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(),
+                        new GeoLocation(locationResult.getLastLocation().getLatitude(),
+                                locationResult.getLastLocation().getLongitude()),
+                        new GeoFire.CompletionListener() {
+                            @Override
+                            public void onComplete(String key, DatabaseError error) {
+                                if(error != null)
+                                    Snackbar.make(mapFragment.getView(), error.getMessage(),Snackbar.LENGTH_LONG).show();
+                                else
+                                    Snackbar.make(mapFragment.getView(), "You're Online!",Snackbar.LENGTH_LONG).show();
+                            }
+                        });
             }
         };
 
@@ -98,7 +146,19 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        geoFire.removeLocation(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        onlineRef.removeEventListener(onlineValueEventListener);
         super.onDestroy();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerOnlineSystem();
+    }
+
+    private void registerOnlineSystem() {
+        onlineRef.addValueEventListener(onlineValueEventListener);
     }
 
     @Override
@@ -125,7 +185,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                                         .addOnFailureListener(new OnFailureListener() {
                                             @Override
                                             public void onFailure(@NonNull Exception e) {
-                                                Toast.makeText(getContext(),e.getMessage(),Toast.LENGTH_SHORT);
+                                                Toast.makeText(getContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
                                             }
                                         })
                                         .addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -152,7 +212,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
                         Toast.makeText(getContext(),"Persmission" + permissionDeniedResponse.getPermissionName() +
-                             "was denied", Toast.LENGTH_SHORT);
+                             "was denied", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
