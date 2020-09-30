@@ -48,7 +48,7 @@ public class TutorHomeActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow)
+                R.id.nav_home, R.id.nav_gallery, R.id.nav_sign_out)
                 .setOpenableLayout(drawer)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
@@ -62,7 +62,7 @@ public class TutorHomeActivity extends AppCompatActivity {
                             .setTitle("Sign Out")
                             .setMessage("Do you wish to sign out?")
                             .setNegativeButton("CANCEL", (dialogInterface, i) -> dialogInterface.dismiss())
-                            .setPositiveButton("SIGN OUT", (dialogInterface, i) -> AuthUI.getInstance()
+                            .setPositiveButton("SIGN OUT", (dialogInterface, i) ->  AuthUI.getInstance()
                                     .signOut(TutorHomeActivity.this)
                                     .addOnCompleteListener(new OnCompleteListener<Void>() {
                                         @Override
@@ -78,8 +78,8 @@ public class TutorHomeActivity extends AppCompatActivity {
                     dialog.setOnShowListener(dialogInterface ->
                             dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                                 .setTextColor(getResources().getColor(android.R.color.holo_red_dark)));
-                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                                .setTextColor(getResources().getColor(R.color.colorAccent));
+                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                                //.setTextColor(getResources().getColor(R.color.colorAccent));
                             dialog.show();
                 }
                 return true;

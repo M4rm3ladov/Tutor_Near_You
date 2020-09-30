@@ -56,6 +56,8 @@ import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
+import java.util.Objects;
+
 public class HomeFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
@@ -88,7 +90,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
-        init();
+        if(FirebaseAuth.getInstance().getCurrentUser() != null){
+            init();
+        }
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
@@ -101,7 +105,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
         tutorsLocationRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES);
         currentUserRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES)
-                .child(FirebaseAuth.getInstance().getCurrentUser().getUid());
+                .child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid());
         geoFire = new GeoFire(tutorsLocationRef);
 
         registerOnlineSystem();
@@ -146,7 +150,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-        geoFire.removeLocation(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        if (FirebaseAuth.getInstance().getCurrentUser() != null){
+            geoFire.removeLocation(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        }
         onlineRef.removeEventListener(onlineValueEventListener);
         super.onDestroy();
     }

@@ -16,7 +16,7 @@
         android:id="@+id/image_avatar"
         android:layout_width="80dp"
         android:layout_height="80dp"
-        android:scr="@mipmap/ic_launcher_round"
+        android:src="@mipmap/ic_launcher_round"
         app:civ_border_color="@color/colorAccent"
         app:civ_border_width="1dp"/>
 
@@ -40,8 +40,7 @@
             android:text="0.0"
             android:layout_marginStart="4dp"
             android:layout_gravity="center_vertical"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1" />a
-
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
     </LinearLayout>
 
     <TextView
