@@ -1,7 +1,7 @@
 package com.example.tutornearyou.Model;
 
 public class TutorInfoModel {
-    private String firstName, lastName, phoneNumber;
+    private String firstName, lastName, phoneNumber, avatar;
     private double rating;
 
     public TutorInfoModel() {
@@ -37,5 +37,13 @@ public class TutorInfoModel {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }
