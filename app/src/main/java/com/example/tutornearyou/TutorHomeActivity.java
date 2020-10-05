@@ -166,20 +166,21 @@ public class TutorHomeActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK){
             if(data != null && data.getData() != null){
-                imageUri = data.getData();
-                img_avatar.setImageURI(imageUri);
-
-                showDialogUpload();
+                showDialogUpload(data);
             }
         }
     }
 
-    private void showDialogUpload() {
+    private void showDialogUpload(Intent data) {
         AlertDialog.Builder builder = new AlertDialog.Builder(TutorHomeActivity.this)
                 .setTitle("Select Image")
                 .setMessage("Do you wish to change avatar?")
                 .setNegativeButton("CANCEL", (dialogInterface, i) -> dialogInterface.dismiss())
                 .setPositiveButton("UPLOAD", (dialogInterface, i) -> {
+
+                    imageUri = data.getData();
+                    img_avatar.setImageURI(imageUri);
+
                         if(imageUri != null){
                             waitingDialog.setMessage("Uploading...");
                             waitingDialog.show();
