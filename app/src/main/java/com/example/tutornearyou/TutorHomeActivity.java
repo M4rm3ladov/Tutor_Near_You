@@ -32,6 +32,7 @@ import com.google.firebase.storage.UploadTask;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -123,7 +124,7 @@ public class TutorHomeActivity extends AppCompatActivity {
                             dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                                     .setTextColor(getResources().getColor(android.R.color.holo_red_dark)));
                     dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                    //.setTextColor(getResources().getColor(R.color.colorAccent));
+                                    //.setTextColor(ContextCompat.getColor(TutorHomeActivity.this,R.color.colorAccent));
                     dialog.show();
                 }
                 return true;
@@ -134,13 +135,11 @@ public class TutorHomeActivity extends AppCompatActivity {
         View headerView = navigationView.getHeaderView(0);
         TextView text_name = headerView.findViewById(R.id.text_name);
         TextView text_phone = headerView.findViewById(R.id.text_phone);
-        TextView text_star = headerView.findViewById(R.id.text_star);
         // image
         img_avatar = headerView.findViewById(R.id.image_avatar);
 
         text_name.setText(CommonClass.buildWelcomeMessage());
         text_phone.setText(CommonClass.currentUser != null ? CommonClass.currentUser.getPhoneNumber() : "");
-        text_star.setText(CommonClass.currentUser != null ? String.valueOf(CommonClass.currentUser.getRating()) : "0.0");
 
         // image
         img_avatar.setOnClickListener(new View.OnClickListener() {

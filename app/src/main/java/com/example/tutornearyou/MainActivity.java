@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void onSuccess(InstanceIdResult instanceIdResult) {
                                     Log.d("TOKEN", instanceIdResult.getToken());
-                                    UserUtils.updateToken(MainActivity.this,instanceIdResult.getToken());
+                                    UserUtils.updateToken(MainActivity.this, instanceIdResult.getToken());
                                 }
                             });
                     handleInfoRegister();

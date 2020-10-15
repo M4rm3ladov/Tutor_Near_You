@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Camera;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
@@ -56,6 +58,9 @@ import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class HomeFragment extends Fragment implements OnMapReadyCallback {
@@ -75,13 +80,13 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
     ValueEventListener onlineValueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(@NonNull DataSnapshot snapshot) {
-            if(snapshot.exists())
+            if (snapshot.exists() && currentUserRef != null)
                 currentUserRef.onDisconnect().removeValue();
         }
 
         @Override
         public void onCancelled(@NonNull DatabaseError error) {
-            Snackbar.make(mapFragment.getView(), error.getMessage(),Snackbar.LENGTH_LONG).show();
+            Snackbar.make(mapFragment.getView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
         }
     };
 
@@ -90,7 +95,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
-        if(FirebaseAuth.getInstance().getCurrentUser() != null){
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             init();
         }
 
@@ -103,12 +108,11 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
 
     private void init() {
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
-        tutorsLocationRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES);
-        currentUserRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES)
-                .child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid());
-        geoFire = new GeoFire(tutorsLocationRef);
 
-        registerOnlineSystem();
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Snackbar.make(getView(), getString(R.string.permission_require), Snackbar.LENGTH_SHORT).show();
+            return;
+        }
 
         locationRequest = new LocationRequest();
         locationRequest.setSmallestDisplacement(10f);
@@ -124,33 +128,54 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                         locationResult.getLastLocation().getLongitude());
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
 
-                // update location
-                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(),
-                        new GeoLocation(locationResult.getLastLocation().getLatitude(),
-                                locationResult.getLastLocation().getLongitude()),
-                        new GeoFire.CompletionListener() {
-                            @Override
-                            public void onComplete(String key, DatabaseError error) {
-                                if(error != null)
-                                    Snackbar.make(mapFragment.getView(), error.getMessage(),Snackbar.LENGTH_LONG).show();
-                                else
-                                    Snackbar.make(mapFragment.getView(), "You're Online!",Snackbar.LENGTH_LONG).show();
-                            }
-                        });
+                Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+                List<Address> addressList;
+                try {
+                    addressList = geocoder.getFromLocation(locationResult.getLastLocation().getLatitude(),
+                            locationResult.getLastLocation().getLongitude(), 1);
+                    String cityName = addressList.get(0).getLocality();
+
+                    tutorsLocationRef = FirebaseDatabase.getInstance().getReference(CommonClass.TUTORS_LOCATION_REFERENCES)
+                            .child(cityName);
+                    currentUserRef = tutorsLocationRef.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid());
+                    geoFire = new GeoFire(tutorsLocationRef);
+
+                    // update location
+                    geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(),
+                            new GeoLocation(locationResult.getLastLocation().getLatitude(),
+                                    locationResult.getLastLocation().getLongitude()),
+                            new GeoFire.CompletionListener() {
+                                @Override
+                                public void onComplete(String key, DatabaseError error) {
+                                    if (error != null)
+                                        Snackbar.make(mapFragment.getView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
+                                    else
+                                        Snackbar.make(mapFragment.getView(), "You're Online!", Snackbar.LENGTH_LONG).show();
+                                }
+                            });
+
+                    registerOnlineSystem();
+                    
+                } catch (IOException e) {
+                    Snackbar.make(getView(), e.getMessage(), Snackbar.LENGTH_SHORT).show();
+                }
+
             }
         };
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Snackbar.make(getView(), getString(R.string.permission_require), Snackbar.LENGTH_SHORT).show();
             return;
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+
     }
 
     @Override
     public void onDestroy() {
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-        if (FirebaseAuth.getInstance().getCurrentUser() != null){
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             geoFire.removeLocation(FirebaseAuth.getInstance().getCurrentUser().getUid());
         }
         onlineRef.removeEventListener(onlineValueEventListener);
@@ -178,6 +203,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
                         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            Snackbar.make(getView(), getString(R.string.permission_require), Snackbar.LENGTH_SHORT).show();
                             return;
                         }
                         mMap.setMyLocationEnabled(true);
@@ -186,19 +212,20 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                             @Override
                             public boolean onMyLocationButtonClick() {
                                 if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
                                 }
                                 fusedLocationProviderClient.getLastLocation()
                                         .addOnFailureListener(new OnFailureListener() {
                                             @Override
                                             public void onFailure(@NonNull Exception e) {
-                                                Toast.makeText(getContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                                             }
                                         })
                                         .addOnSuccessListener(new OnSuccessListener<Location>() {
                                             @Override
                                             public void onSuccess(Location location) {
-                                                LatLng userLatLng = new LatLng(location.getLatitude(),location.getLongitude());
-                                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng,18f));
+                                                LatLng userLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 18f));
                                             }
                                         });
                                 return true;
@@ -206,19 +233,19 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
                         });
 
                         // set layout button
-                        View locationButton = ((View)mapFragment.getView().findViewById(Integer.parseInt("1"))
-                        .getParent()).findViewById(Integer.parseInt("2"));
+                        View locationButton = ((View) mapFragment.getView().findViewById(Integer.parseInt("1"))
+                                .getParent()).findViewById(Integer.parseInt("2"));
                         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) locationButton.getLayoutParams();
                         // right button
-                        params.addRule(RelativeLayout.ALIGN_PARENT_TOP,0);
-                        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM,RelativeLayout.TRUE);
-                        params.setMargins(0,0,0,50);
+                        params.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
+                        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+                        params.setMargins(0, 0, 0, 50);
                     }
 
                     @Override
                     public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                        Toast.makeText(getContext(),"Persmission" + permissionDeniedResponse.getPermissionName() +
-                             "was denied", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Persmission" + permissionDeniedResponse.getPermissionName() +
+                                "was denied", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -226,12 +253,12 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback {
 
                     }
                 }).check();
-        try{
-            boolean success = googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(),R.raw.uber_maps_style));
-            if(!success)
-                Log.e("TNY","Style parsing error");
-        }catch (Resources.NotFoundException e){
-            Log.e("TNY",e.getMessage());
+        try {
+            boolean success = googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.uber_maps_style));
+            if (!success)
+                Log.e("TNY", "Style parsing error");
+        } catch (Resources.NotFoundException e) {
+            Log.e("TNY", e.getMessage());
         }
 
     }
